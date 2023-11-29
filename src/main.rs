@@ -1,52 +1,8 @@
+mod eval;
+
 use std::{ io::{ self, Write }, str::FromStr, cmp::min, cmp::max, collections::HashMap };
 use shakmaty::{ Chess, Move, Color, Role, Square, File, Rank, Position };
 use shakmaty::uci::Uci;
-
-fn evaluate_pos(pos: &Chess) -> i32 {
-    let mut score = 0;
-
-    // Piece-square table
-    let piece_square_table: HashMap<(Role, Square), i32> = [
-        ((Role::Pawn, Square::A4), 1),
-        ((Role::Pawn, Square::D4), 1),
-        ((Role::Pawn, Square::E4), 1),
-        ((Role::Pawn, Square::H4), 1),
-        // Add more entries for other pieces and squares
-    ]
-        .iter()
-        .cloned()
-        .collect();
-
-    for sq in Square::ALL {
-        if let Some(piece) = pos.board().piece_at(sq) {
-            let mut value = match piece.role {
-                Role::Pawn => 1,
-                Role::Knight => 3,
-                Role::Bishop => 3,
-                Role::Rook => 5,
-                Role::Queen => 9,
-                Role::King => 0,
-            };
-
-            // Add piece-square table value
-            if let Some(piece_square_value) = piece_square_table.get(&(piece.role, sq)) {
-                value += *piece_square_value;
-            }
-
-            if piece.color == Color::White {
-                score += value;
-            } else {
-                score -= value;
-            }
-        }
-    }
-
-    // Mobility
-    let mobility = pos.legal_moves().len() as i32;
-    score += mobility;
-
-    score
-}
 
 fn alpha_beta_search(
     pos: &Chess,
@@ -56,7 +12,7 @@ fn alpha_beta_search(
     maximizing_player: bool
 ) -> (Option<Move>, i32) {
     if depth == 0 || pos.is_checkmate() || pos.is_stalemate() {
-        return (None, evaluate_pos(pos));
+        return (None, eval::evaluate_pos(pos));
     }
 
     let mut best_move = None;
@@ -169,7 +125,7 @@ fn main() {
         }
 
         // Bot's move
-        let (best_move, _) = alpha_beta_search(&pos, 6, i32::MIN, i32::MAX, false);
+        let (best_move, _) = alpha_beta_search(&pos, 4, i32::MIN, i32::MAX, false);
         if let Some(best_move) = best_move {
             pos = pos.play(&best_move).expect("move should be legal");
         }
